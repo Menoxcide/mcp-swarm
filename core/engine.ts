@@ -92,11 +92,14 @@ let currentExecution: {
 
 let io: Server;
 
-// Queue system for sequential agent execution to prevent timeouts
+// Enhanced queue system for sequential agent execution with detailed progress tracking
 class AgentQueue {
   private queue: Array<{ agent: Agent; index: number }> = [];
   private running = false;
   private concurrency = 2; // Run 2 agents at a time to balance speed and resource usage
+  private completedCount = 0;
+  private startTime = Date.now();
+  private agentStartTimes: Map<string, number> = new Map();
 
   add(agent: Agent, index: number) {
     this.queue.push({ agent, index });
@@ -114,49 +117,117 @@ class AgentQueue {
       }
 
       const promises = batch.map(async ({ agent, index }) => {
+        const agentStartTime = Date.now();
+        this.agentStartTimes.set(agent.name, agentStartTime);
+
         console.log(`🤖 Running agent: ${agent.name} on task: "${state.task}"`);
+
+        io?.emit('log', {
+          level: 'info',
+          message: `🤖 Starting ${agent.name}: ${getAgentDescription(agent.name)}`,
+          timestamp: new Date().toISOString(),
+          type: 'agent_start',
+          agent: agent.name
+        });
 
         // Update agent status to running
         currentExecution.agents[index].status = 'running';
         currentExecution.agents[index].progress = 10;
+
         io?.emit('agent-update', {
           agent: agent.name,
           status: 'running',
-          progress: 10
+          progress: 10,
+          startTime: agentStartTime,
+          eta: this.calculateETA(agent.name, agents.length)
         });
+
+        // Send progress updates during execution
+        const progressInterval = setInterval(() => {
+          const elapsed = Date.now() - agentStartTime;
+          const progress = Math.min(90, 10 + (elapsed / 45000) * 80); // Estimate progress based on time
+          currentExecution.agents[index].progress = Math.round(progress);
+
+          io?.emit('agent-update', {
+            agent: agent.name,
+            status: 'running',
+            progress: Math.round(progress),
+            eta: this.calculateETA(agent.name, agents.length)
+          });
+        }, 2000);
 
         try {
           const model = createModel();
           // Add timeout for individual agent calls
           const agentPromise = agent.run(state, { explorer: state.explorer, model });
           const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error(`Agent ${agent.name} timeout after 30s`)), 60000)
+            setTimeout(() => reject(new Error(`Agent ${agent.name} timeout after 60s`)), 60000)
           );
           const result = await Promise.race([agentPromise, timeoutPromise]);
 
+          clearInterval(progressInterval);
           state.results = { ...state.results, ...result.results };
           state.phase = agent.name;
+          this.completedCount++;
 
           // Update agent status to completed
           currentExecution.agents[index].status = 'completed';
           currentExecution.agents[index].progress = 100;
+
+          const agentDuration = Math.round((Date.now() - agentStartTime) / 1000);
+
           io?.emit('agent-update', {
             agent: agent.name,
             status: 'completed',
-            progress: 100
+            progress: 100,
+            duration: agentDuration
+          });
+
+          io?.emit('log', {
+            level: 'success',
+            message: `✅ ${agent.name} completed in ${agentDuration}s - generated ${Object.keys(result.results).length} outputs`,
+            timestamp: new Date().toISOString(),
+            type: 'agent_complete',
+            agent: agent.name,
+            duration: agentDuration,
+            outputs: Object.keys(result.results).length
           });
 
           console.log(`✅ Agent ${agent.name} completed - generated ${Object.keys(result.results).length} outputs`);
+
+          // Update overall progress
+          const overallProgress = Math.round((this.completedCount / agents.length) * 100);
+          io?.emit('execution-update', {
+            status: 'running',
+            currentPhase: `Processing: ${agent.name}`,
+            progress: overallProgress,
+            completedAgents: this.completedCount,
+            totalAgents: agents.length,
+            timestamp: new Date().toISOString()
+          });
+
         } catch (error) {
+          clearInterval(progressInterval);
           console.error(`❌ Agent ${agent.name} failed:`, error instanceof Error ? error.message : String(error));
 
           // Update agent status to error
           currentExecution.agents[index].status = 'error';
           currentExecution.agents[index].progress = 0;
+
           io?.emit('agent-update', {
             agent: agent.name,
             status: 'error',
-            progress: 0
+            progress: 0,
+            error: error instanceof Error ? error.message : String(error)
+          });
+
+          io?.emit('log', {
+            level: 'error',
+            message: `❌ ${agent.name} failed: ${error instanceof Error ? error.message : String(error)}`,
+            timestamp: new Date().toISOString(),
+            type: 'agent_error',
+            agent: agent.name,
+            error: error instanceof Error ? error.message : String(error)
           });
         }
       });
@@ -166,6 +237,20 @@ class AgentQueue {
     };
 
     await processBatch();
+  }
+
+  private calculateETA(agentName: string, totalAgents: number): string {
+    const agentStartTime = this.agentStartTimes.get(agentName);
+    if (!agentStartTime) return 'Calculating...';
+
+    const elapsed = Date.now() - agentStartTime;
+    const avgTimePerAgent = elapsed / Math.max(1, this.completedCount);
+    const remainingAgents = totalAgents - this.completedCount - (this.concurrency - 1); // Account for currently running
+    const estimatedRemaining = remainingAgents * avgTimePerAgent;
+
+    if (estimatedRemaining < 1000) return '< 1s';
+    if (estimatedRemaining < 60000) return `${Math.round(estimatedRemaining / 1000)}s`;
+    return `${Math.round(estimatedRemaining / 60000)}m`;
   }
 }
 
@@ -237,6 +322,23 @@ async function startAPIServer() {
     // Send current status on connection
     socket.emit('status', currentExecution);
 
+    // Handle task execution requests from frontend
+    socket.on('run-task', async (data) => {
+      const { task } = data;
+      console.log('Received task from frontend:', task);
+
+      try {
+        await runPipelineWithUpdates(task);
+        socket.emit('task-completed', { success: true });
+      } catch (error) {
+        console.error('Task execution failed:', error);
+        socket.emit('task-completed', {
+          success: false,
+          error: error instanceof Error ? error.message : String(error)
+        });
+      }
+    });
+
     socket.on('disconnect', () => {
       console.log('Frontend disconnected:', socket.id);
     });
@@ -252,59 +354,182 @@ async function startAPIServer() {
 
 // Enhanced pipeline with real-time updates and queue system
 export async function runPipelineWithUpdates(task: string) {
-console.log('🚀 Starting MCP Swarm pipeline with real-time updates...');
+  const startTime = Date.now();
+  console.log('🚀 Starting MCP Swarm pipeline with real-time updates...');
 
-// Initialize MCP discovery
-const { explorer } = await discoverMCPNode({ task });
-const model = createModel();
+  // Emit initial status with detailed info
+  io?.emit('execution-start', {
+    task,
+    timestamp: new Date().toISOString(),
+    totalAgents: 0,
+    estimatedDuration: 'Calculating...',
+    startTime
+  });
+
+  io?.emit('log', {
+    level: 'info',
+    message: `🚀 Starting MCP Swarm pipeline for task: "${task}"`,
+    timestamp: new Date().toISOString(),
+    type: 'system'
+  });
+
+  // Initialize MCP discovery
+  const { explorer } = await discoverMCPNode({ task });
+  const model = createModel();
 
   // Start live UI for progress monitoring
   console.log('🎨 Starting live UI dashboard...');
   const { startLiveUI } = await import('./../ui/server.js');
   startLiveUI(explorer);
 
-// Load agents
-const agentFiles = await readdir('agents');
-console.log(`📋 Loading ${agentFiles.filter(f => f.endsWith('.ts') && f !== 'template.ts').length} agents...`);
+  io?.emit('log', {
+    level: 'info',
+    message: '🎨 Live UI dashboard started at http://localhost:3000',
+    timestamp: new Date().toISOString(),
+    type: 'system'
+  });
+
+  // Load agents with detailed logging
+  const agentFiles = await readdir('agents');
+  const agentCount = agentFiles.filter(f => f.endsWith('.ts') && f !== 'template.ts').length;
+  console.log(`📋 Loading ${agentCount} agents...`);
+
+  io?.emit('log', {
+    level: 'info',
+    message: `📋 Loading ${agentCount} specialized agents...`,
+    timestamp: new Date().toISOString(),
+    type: 'system'
+  });
+
   const agents: Agent[] = [];
 
-for (const file of agentFiles) {
-if (file.endsWith('.ts') && file !== 'template.ts') {
-try {
-const { default: agent } = await import(pathToFileURL(join('./agents', file)).href);
-  agents.push(agent);
-console.log(`📦 Loaded agent: ${agent.name}`);
-} catch (error) {
-    console.warn(`⚠️ Failed to load agent ${file}:`, error);
-    }
-    }
-}
+  for (const file of agentFiles) {
+    if (file.endsWith('.ts') && file !== 'template.ts') {
+      try {
+        const { default: agent } = await import(pathToFileURL(join('./agents', file)).href);
+        agents.push(agent);
+        console.log(`📦 Loaded agent: ${agent.name}`);
 
-// Initialize agent statuses
-currentExecution.agents = agents.map(agent => ({
-name: agent.name,
-status: 'idle' as const,
-  progress: 0,
+        io?.emit('log', {
+          level: 'info',
+          message: `✅ Loaded ${agent.name}: ${getAgentDescription(agent.name)}`,
+          timestamp: new Date().toISOString(),
+          type: 'agent_load',
+          agent: agent.name
+        });
+      } catch (error) {
+        console.warn(`⚠️ Failed to load agent ${file}:`, error);
+        io?.emit('log', {
+          level: 'error',
+          message: `❌ Failed to load agent ${file}: ${error}`,
+          timestamp: new Date().toISOString(),
+          type: 'error'
+        });
+      }
+    }
+  }
+
+  // Initialize agent statuses
+  currentExecution.agents = agents.map(agent => ({
+    name: agent.name,
+    status: 'idle' as const,
+    progress: 0,
     description: getAgentDescription(agent.name)
-}));
+  }));
 
-// Initialize state
-const state = {
-task,
-phase: 'start',
-  results: {},
+  // Initialize state
+  const state = {
+    task,
+    phase: 'start',
+    results: {},
     explorer
-};
+  };
 
-console.log(`🎯 Starting ${agents.length} agents in queued batches of ${Math.min(2, agents.length)}...`);
+  const estimatedDuration = Math.ceil(agents.length * 45); // Rough estimate: 45s per agent
+  console.log(`🎯 Starting ${agents.length} agents in queued batches of ${Math.min(2, agents.length)}...`);
 
-// Use queue system instead of parallel execution
-const queue = new AgentQueue();
-agents.forEach((agent, index) => queue.add(agent, index));
-await queue.process(state, agents, io);
+  io?.emit('execution-update', {
+    status: 'running',
+    currentPhase: 'Agent Processing',
+    progress: 0,
+    estimatedDuration: `${estimatedDuration}s`,
+    completedAgents: 0,
+    totalAgents: agents.length,
+    timestamp: new Date().toISOString()
+  });
 
-console.log('🎉 Pipeline completed:', Object.keys(state.results).length, 'outputs generated');
-return state;
+  io?.emit('log', {
+    level: 'info',
+    message: `🎯 Starting ${agents.length} agents in queued batches (2 at a time). Estimated duration: ${estimatedDuration}s`,
+    timestamp: new Date().toISOString(),
+    type: 'system'
+  });
+
+  // Override console.log and console.error to capture all agent activities
+  const originalConsoleLog = console.log;
+  const originalConsoleError = console.error;
+  const originalConsoleWarn = console.warn;
+
+  console.log = function(...args) {
+    const message = args.join(' ');
+    io?.emit('log', {
+      level: 'info',
+      message,
+      timestamp: new Date().toISOString(),
+      type: 'console'
+    });
+    originalConsoleLog.apply(console, args);
+  };
+
+  console.error = function(...args) {
+    const message = args.join(' ');
+    io?.emit('log', {
+      level: 'error',
+      message,
+      timestamp: new Date().toISOString(),
+      type: 'console'
+    });
+    originalConsoleError.apply(console, args);
+  };
+
+  console.warn = function(...args) {
+    const message = args.join(' ');
+    io?.emit('log', {
+      level: 'warning',
+      message: args.join(' '),
+      timestamp: new Date().toISOString(),
+      type: 'console'
+    });
+    originalConsoleWarn.apply(console, args);
+  };
+
+  // Use queue system instead of parallel execution
+  const queue = new AgentQueue();
+  agents.forEach((agent, index) => queue.add(agent, index));
+  await queue.process(state, agents, io);
+
+  // Restore console functions
+  console.log = originalConsoleLog;
+  console.error = originalConsoleError;
+  console.warn = originalConsoleWarn;
+
+  const duration = Math.round((Date.now() - startTime) / 1000);
+  console.log('🎉 Pipeline completed:', Object.keys(state.results).length, 'outputs generated');
+
+  io?.emit('execution-complete', {
+    results: state.results,
+    duration: `${duration}s`,
+    timestamp: new Date().toISOString()
+  });
+
+  io?.emit('log', {
+    level: 'success',
+    message: `🎉 Pipeline completed in ${duration}s with ${Object.keys(state.results).length} outputs generated`,
+    timestamp: new Date().toISOString(),
+    type: 'completion'
+  });
+
+  return state;
 }
 
 function getAgentDescription(agentName: string): string {
