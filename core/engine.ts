@@ -43,9 +43,8 @@ export async function runPipeline(task: string) {
     explorer
   };
 
-  // Sort agents by priority (first 3 for demo)
-  const priorityAgents = ['market_researcher', 'product_strategist', 'system_architect'];
-  const agentsToRun = agents.filter(agent => priorityAgents.includes(agent.name));
+  // Run all agents for complete application development
+  const agentsToRun = agents.filter(agent => agent.name !== 'template');
 
   for (const agent of agentsToRun) {
     console.log(`🤖 Running agent: ${agent.name} on task: "${state.task}"`);

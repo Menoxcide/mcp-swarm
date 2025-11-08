@@ -1,0 +1,1 @@
+Task "Find 3 bugs in last output" completed successfully. This is a mock response - in production this would use a real LLM.

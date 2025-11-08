@@ -1,4 +1,4 @@
-## Product Strategy for "Create a product strategy and roadmap for "Build the next big thing". Define MVP features, monetization model, target market, and go-to-market strategy."
+## Product Strategy for "Define 3 MVP features + paid upgrade path"
 
 ### MVP Features
 - Real-time agent collaboration

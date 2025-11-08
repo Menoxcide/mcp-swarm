@@ -1,88 +1,4 @@
-export default {
-  name: 'ui_ux_designer',
-  async run(state: any, { explorer, model }: any) {
-    console.log(`🎨 UI/UX Designer creating interface for: "${state.task}"`);
-
-    // Create package.json for the React app
-    const packageJson = {
-      "name": "mcp-swarm-ui",
-      "version": "1.0.0",
-      "private": true,
-      "dependencies": {
-        "react": "^18.2.0",
-        "react-dom": "^18.2.0",
-        "react-scripts": "5.0.1",
-        "tailwindcss": "^3.3.0",
-        "autoprefixer": "^10.4.14",
-        "postcss": "^8.4.24",
-        "lucide-react": "^0.294.0",
-        "@types/node": "^16.18.39",
-        "@types/react": "^18.2.15",
-        "@types/react-dom": "^18.2.7",
-        "typescript": "^4.9.5"
-      },
-      "scripts": {
-        "start": "react-scripts start",
-        "build": "react-scripts build",
-        "test": "react-scripts test",
-        "eject": "react-scripts eject"
-      },
-      "eslintConfig": {
-        "extends": [
-          "react-app",
-          "react-app/jest"
-        ]
-      },
-      "browserslist": {
-        "production": [
-          ">0.2%",
-          "not dead",
-          "not op_mini all"
-        ],
-        "development": [
-          "last 1 chrome version",
-          "last 1 firefox version",
-          "last 1 safari version"
-        ]
-      },
-      "devDependencies": {
-        "tailwindcss": "^3.3.0",
-        "autoprefixer": "^10.4.14",
-        "postcss": "^8.4.24"
-      }
-    };
-
-    // Create Tailwind config
-    const tailwindConfig = `/** @type {import('tailwindcss').Config} */
-module.exports = {
-  content: [
-    "./src/**/*.{js,jsx,ts,tsx}",
-  ],
-  theme: {
-    extend: {
-      colors: {
-        primary: {
-          50: '#eff6ff',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-        }
-      }
-    },
-  },
-  plugins: [],
-}`;
-
-    // Create PostCSS config
-    const postcssConfig = `module.exports = {
-  plugins: {
-    tailwindcss: {},
-    autoprefixer: {},
-  },
-}`;
-
-    // Create main App.tsx
-    const appTsx = `import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bot, FileText, Settings, Activity, Zap, Users, BarChart3 } from 'lucide-react';
 
 interface Agent {
@@ -225,7 +141,7 @@ function App() {
                   <div key={agent.id} className="border border-gray-200 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="font-medium text-gray-900">{agent.name}</h3>
-                      <div className={\`flex items-center space-x-1 px-2 py-1 rounded-full text-xs \${getStatusColor(agent.status)}\`}>
+                      <div className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs ${getStatusColor(agent.status)}`}>
                         {getStatusIcon(agent.status)}
                         <span className="capitalize">{agent.status}</span>
                       </div>
@@ -234,7 +150,7 @@ function App() {
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div
                         className="bg-primary-600 h-2 rounded-full transition-all duration-300"
-                        style={{ width: \`\${agent.progress}%\` }}
+                        style={{ width: `${agent.progress}%` }}
                       ></div>
                     </div>
                     <div className="flex justify-between text-xs text-gray-500 mt-1">
@@ -312,73 +228,4 @@ function App() {
   );
 }
 
-export default App;`;
-
-    // Create index.tsx
-    const indexTsx = `import React from 'react';
-import ReactDOM from 'react-dom/client';
-import './index.css';
-import App from './App';
-
-const root = ReactDOM.createRoot(
-  document.getElementById('root') as HTMLElement
-);
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);`;
-
-    // Create index.css
-    const indexCss = `@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
-}`;
-
-    console.log(`🎨 Creating React application...`);
-    await explorer.writeFile('ui/package.json', JSON.stringify(packageJson, null, 2));
-    await explorer.writeFile('ui/tailwind.config.js', tailwindConfig);
-    await explorer.writeFile('ui/postcss.config.js', postcssConfig);
-    await explorer.writeFile('ui/src/App.tsx', appTsx);
-    await explorer.writeFile('ui/src/index.tsx', indexTsx);
-    await explorer.writeFile('ui/src/index.css', indexCss);
-    await explorer.writeFile('ui/public/index.html', `<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <meta
-      name="description"
-      content="MCP-Swarm AI Agent Platform Dashboard"
-    />
-    <title>MCP-Swarm Dashboard</title>
-  </head>
-  <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
-  </body>
-</html>`);
-
-    return {
-      results: {
-        ...state.results,
-        [this.name]: 'Created complete React dashboard with Tailwind CSS'
-      }
-    };
-  }
-};
+export default App;
