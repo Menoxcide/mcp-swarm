@@ -1,0 +1,491 @@
+# mcp-swarm: Complete AI Agent Project Blueprint (Amp Reference)
+# This is a **single, self-contained YAML file** with **zero external references**.
+# Amp (AI agent in Cursor IDE): You are starting from scratch. You have **no prior knowledge**.
+# Follow this file **exactly** — do not assume, skip, or improvise.
+# Goal: Build **mcp-swarm**, the world’s first fully free, modular, self-improving, multi-agent MCP platform.
+# Updated: Expanded Cursor extension features with 2025 integrations (MCP elicitation, agent mode, tool sets, Composer hooks).
+
+project:
+  name: "mcp-swarm"
+  description: "Free, local-first, NVIDIA GPU-powered multi-agent system using MCP servers, persistent sandbox, live UI, and self-evolution."
+  license: "MIT"
+  version: "0.1.0"
+  vision: |
+    User runs: `npx mcp-swarm "Build a viral AI dashboard"`
+    System:
+      1. Auto-discovers 10+ free MCP servers
+      2. Spins persistent sandbox
+      3. Runs 8+ parallel expert agents
+      4. Shows live UI at http://localhost:3000
+      5. Auto-commits, deploys, and improves itself
+      6. Uses only **free models + local NVIDIA GPU** (via LM Studio or direct)
+      7. Integrates deeply with Cursor IDE via extension for seamless agentic workflows
+
+setup:
+  prerequisites:
+    - Node.js >= 18
+    - Git
+    - NVIDIA GPU with CUDA (RTX 20/30/40/50-series recommended)
+    - LM Studio (free app for local LLMs)
+    - Cursor IDE 0.51+ (VS Code fork with AI features)
+    - Internet (for initial model/MCP download)
+  init_command: |
+    Run:
+npx mcp-swarm@latest init
+textThis must:
+  1. Create full folder structure
+  2. Install all npm packages
+  3. Download/setup Grok-1 (quantized) via LM Studio to `./models/`
+  4. Create `sandbox/mcp-config.json` with 10 enabled MCPs
+  5. Start live UI at http://localhost:3000
+  6. Configure LM Studio API endpoint for models
+  7. Build and package Cursor extension VSIX
+
+folder_structure:
+root: "mcp-swarm/"
+directories:
+- "core/"          # config.ts, engine.ts, discover.ts
+- "agents/"        # .ts files auto-loaded
+- "plugins/"       # .ts files auto-triggered
+- "ui/public/"     # index.html, socket.io client
+- "sandbox/"       # persistent MCP sandbox (never delete)
+- "models/"        # LM Studio model configs/paths
+- "blobs/"         # ctx-zip storage
+- "examples/"      # demo tasks
+- "extensions/"    # Cursor IDE extension files (package.json, extension.ts, VSIX)
+
+dependencies:
+npm:
+- "ctx-zip@latest"
+- "@langchain/langgraph"
+- "express"
+- "socket.io"
+- "chokidar"
+- "simple-git"
+- "zod"
+- "uuid"
+- "archiver"
+- "@vscode/vsce"     # For packaging VSIX
+python:
+- "huggingface-hub"
+- "torch"
+- "transformers"
+- "bitsandbytes"
+- "tensorrt-llm"
+gpu_tools:
+- "NVIDIA CUDA Toolkit 12.8+ (for RTX 50-series)"
+- "LM Studio 0.3.15+ (free LLM runner)"
+- "Ollama (optional fallback)"
+- "Unsloth AI (optional speedup)"
+
+models:
+primary:
+name: "Grok-1"
+source: "xai-org/grok-1"
+type: "open-weights (314B MoE)"
+size: "~80GB (4-bit quantized)"
+lm_studio_setup: |
+  1. Download LM Studio from lmstudio.ai
+  2. Search/download "xai-org/grok-1" (GGUF quantized)
+  3. Load model: Enable GPU offload (all layers to CUDA)
+  4. Start local server: http://localhost:1234/v1 (OpenAI-compatible API)
+  5. In mcp-swarm config: Use base_url="http://localhost:1234/v1"
+inference: "LM Studio with CUDA 12.8 for 2-4x speedup on RTX GPUs"
+lm_studio_supported:
+- name: "Llama 3.2 8B/70B"
+  params: "8B/70B"
+  vram: "6GB+ (RTX 3060+)"
+  why: "Coding/reasoning; multilingual"
+- name: "Mistral Nemo 12B"
+  params: "12B"
+  vram: "8GB+"
+  why: "Efficient agents; tool calling"
+- name: "Phi-3 Mini 3.8B"
+  params: "3.8B"
+  vram: "4GB+"
+  why: "Fast low-VRAM; MCP tools"
+- name: "Gemma 2 9B/27B"
+  params: "9B/27B"
+  vram: "8GB+"
+  why: "Vision/text; TensorRT optimized"
+- name: "DeepSeek-Coder V2 16B"
+  params: "16B"
+  vram: "12GB+ (RTX 4090)"
+  why: "Code-focused MCP wrappers"
+- name: "Qwen3-Coder-480B-A35B"
+  params: "35B active"
+  vram: "24GB+"
+  why: "Advanced tools/reasoning"
+- name: "Nemotron-Nano-v2"
+  params: "15B"
+  vram: "12GB+"
+  why: "Tool calling; NVIDIA collab"
+fallback:
+- name: "Grok-3-Mini"
+  source: "Puter.js proxy"
+  access: "Free via <script src='https://js.puter.com/v2/'></script>"
+- name: "Llama 3.2 8B"
+  source: "ollama run llama3.2"
+  access: "Free, local, NVIDIA-optimized"
+
+mcp_servers:
+config_file: "sandbox/mcp-config.json"
+format: |
+```json
+[
+  {
+    "name": "GitHub MCP",
+    "url": "https://api.github.com/openapi.json",
+    "auth": "oauth",
+    "enabled": true,
+    "description": "Repo ops, PRs, issues"
+  }
+]
+master_list:
+
+name: "GitHub MCP"
+url: "https://api.github.com/openapi.json"
+auth: "oauth"
+description: "Repo ops"
+name: "Slack MCP"
+url: "https://slack.com/api/openapi.json"
+auth: "api-key"
+description: "Team chat"
+name: "Google Drive MCP"
+url: "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"
+auth: "oauth"
+description: "File management"
+name: "Postgres MCP"
+url: "https://mcp.example.com/postgres/openapi.json"
+auth: "basic"
+description: "SQL queries"
+name: "Puppeteer MCP"
+url: "https://mcp.example.com/puppeteer/openapi.json"
+auth: "none"
+description: "Browser automation"
+name: "PayPal MCP"
+url: "https://api.paypal.com/openapi.json"
+auth: "oauth"
+description: "Payments"
+name: "Zapier MCP"
+url: "https://zapier.com/mcp/openapi.json"
+auth: "api-key"
+description: "8000+ app integrations"
+name: "Playwright MCP"
+url: "https://mcp.example.com/playwright/openapi.json"
+auth: "none"
+description: "E2E testing"
+name: "Terminal MCP"
+url: "local"
+auth: "none"
+description: "Shell access"
+name: "Filesystem MCP"
+url: "local"
+auth: "none"
+description: "File read/write"
+management_tools:
+name: "add_mcp"
+schema: "{ name: string, url?: string }"
+description: "Add from master list or custom"
+name: "remove_mcp"
+schema: "{ name: string }"
+name: "toggle_mcp"
+schema: "{ name: string, enabled: boolean }"
+name: "list_mcps"
+schema: "{}"
+auto_discovery:
+urls:
+"https://mcp.directory/v1/public"
+"https://raw.githubusercontent.com/mcp-servers/index/main/servers.json"
+logic: |
+
+Fetch JSON
+Extract .openapi URLs
+Add to config if not exists
+Mark enabled: false by default
+
+
+core_components:
+discover_mcp:
+file: "core/discover.ts"
+code: |
+import { MCPSandboxExplorer } from 'ctx-zip';
+import fs from 'fs/promises';
+import path from 'path';
+export async function discoverMCPNode(state: any) {
+const configPath = path.join('sandbox', 'mcp-config.json');
+let config = [];
+try { config = JSON.parse(await fs.readFile(configPath, 'utf-8')); }
+catch { config = MASTER_MCP_LIST; await saveMCPConfig(config); }
+const enabled = config.filter(s => s.enabled).map(s => ({ url: s.url, name: s.name }));
+const explorer = await MCPSandboxExplorer.create({
+mcpServers: enabled,
+persistent: './sandbox',
+sessionId: swarm-${Date.now()}
+});
+startLiveUI(explorer);
+return { explorer };
+}
+engine:
+file: "core/engine.ts"
+code: |
+import { StateGraph, END } from '@langchain/langgraph';
+import { readdir } from 'fs/promises';
+import { join } from 'path';
+export async function createPipeline() {
+const graph = new StateGraph({ task: '', phase: 'start', results: {}, explorer: null });
+const agentFiles = await readdir('agents');
+for (const file of agentFiles) {
+if (file.endsWith('.ts')) {
+const { default: agent } = await import(join('../agents', file));
+graph.addNode(agent.name, agent.run);
+}
+}
+// ... add orchestrator, plugins, edges
+return graph.compile();
+}
+live_ui:
+file: "ui/server.ts"
+code: |
+import express from 'express';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
+import chokidar from 'chokidar';
+export function startLiveUI(explorer: any) {
+const app = express();
+const server = createServer(app);
+const io = new Server(server);
+app.use(express.static('ui/public'));
+io.on('connection', socket => {
+const watcher = chokidar.watch(explorer.rootDir);
+watcher.on('all', () => explorer.listFiles('/').then(f => socket.emit('files', f)));
+});
+server.listen(3000);
+console.log('UI: http://localhost:3000');
+}
+agents:
+directory: "agents/"
+template_file: "agents/template.ts"
+template_code: |
+export default {
+name: 'example_agent',
+async run(state: any, { explorer, model }: any) {
+const response = await model.invoke([new HumanMessage(Task: ${state.task})]);
+return { results: { ...state.results, [this.name]: response.content } };
+}
+};
+required:
+
+name: "market_researcher"
+prompt: "Analyze CrewAI, Autogen, LangGraph. Output JSON: {pricing, stars, weaknesses}"
+writes: "/research/competitors.json"
+name: "product_strategist"
+prompt: "Define 3 MVP features + paid upgrade path"
+writes: "/plan/roadmap.md"
+name: "system_architect"
+prompt: "Design zero-cost architecture with Fly.io free"
+writes: "/arch/system.mmd"
+name: "mcp_engineer"
+prompt: "Build 2 new MCPs: file_search, image_gen"
+writes: "/mcp/*.ts"
+name: "ui_ux_designer"
+prompt: "Generate React + Tailwind dashboard"
+writes: "/ui/App.tsx"
+name: "devops_engineer"
+prompt: "Write Dockerfile, fly.toml, GitHub Actions"
+writes: "/deploy/*"
+name: "qa_tester"
+prompt: "Fuzz MCPs, test sandbox escape"
+writes: "/test/report.md"
+name: "growth_hacker"
+prompt: "Write 5 X threads + HN post"
+writes: "/growth/*.md"
+name: "critic"
+prompt: "Find 3 bugs in last output"
+writes: "/review/fixes.md"
+name: "evolver"
+prompt: "Improve last agent prompt by 20%"
+writes: "overwrite agent .ts file"
+name: "benchmark"
+prompt: "Run 5 trials, measure speed"
+writes: "/perf/report.json"
+
+plugins:
+directory: "plugins/"
+template_file: "plugins/template.ts"
+default:
+
+name: "auto_commit"
+trigger: "on_file_write"
+action: "git add . && git commit -m 'Auto: {time}'"
+name: "auto_deploy"
+trigger: "on_phase_change:launch"
+action: "fly deploy --local-only"
+name: "hn_poster"
+trigger: "on_file_write:/growth/hn-post.md"
+action: "Post via X MCP"
+
+cursor_integration:
+extension_name: "mcp-swarm-cursor-ext"
+description: "Cursor IDE extension to run mcp-swarm agents directly in IDE, with AI chat integration, MCP tool calls, and agentic workflows."
+compatibility: "Cursor 0.51+ (VS Code fork); supports VSIX install; compatible with VS Code 1.93+"
+setup_instructions: |
+
+Download LM Studio and load a model (e.g., Llama 3.2 8B)
+Start LM Studio server: http://localhost:1234/v1
+In Cursor: Settings > Models > Add model "swarm-agent"
+Provider: "openai"
+Model: "llama3.2"
+API Base: "http://localhost:1234/v1"
+API Key: "lmstudio" (dummy)
+
+Install extension:
+Download VSIX from /extensions/mcp-swarm.vsix
+Cursor: Extensions > ... > Install from VSIX
+
+Usage:
+Cmd+Shift+P > "MCP Swarm: Run Task" > Enter prompt
+Integrates with Composer: "@swarm Build dashboard"
+Sidebar panel: Live MCP file browser + agent chat
+Auto-offload to GPU via LM Studio
+Import VS Code extensions/themes/keybindings for seamless migration
+extension_features:
+
+
+
+command_palette:
+"MCP Swarm: Run Task": Spawn mcp-swarm graph from prompt; integrates with Cursor's agent mode for autonomous edits
+"MCP Swarm: Add MCP Tool": Dynamic MCP discovery/add via UI; supports MCP elicitation (structured input for user prefs/configs)
+"MCP Swarm: Debug Agent": Step-through agent execution; logs tool calls, phases, and GPU usage
+"MCP Swarm: Deploy to Fly": One-click auto-deploy with progress in status bar
+
+sidebar_view:
+"Swarm Explorer": Real-time sandbox tree view; click to edit files, run MCP tools (ls/cat/run_ts)
+"Agent Debugger": Tree of running agents; pause/resume, inspect shared knowledge, view evolution logs
+"MCP Registry": Searchable master list; toggle/enable servers; auto-fetch from discovery URLs
+"Performance Monitor": GPU metrics (via LM Studio), token counts, phase timings; integrates with Cursor's extension monitor
+
+ai_agent_integration:
+Composer_hooks: "@swarm" prefix in Composer chat delegates to mcp-swarm orchestrator; supports multi-file edits, MCP tool invocation
+Chat_extensions: Add swarm agents as custom chat participants; e.g., "@critic Review code" triggers evolver/critic loop
+Agent_mode_support: Expose mcp-swarm tools as VS Code Language Model Tools API; auto-invoke in Cursor's agent mode (e.g., #swarm-tools for parallel agents)
+Tool_sets: Predefined JSONC sets (e.g., "mcp-dev-tools": [add_mcp, grep, execute_ts]); selectable in tools picker for scoped workflows
+
+workspace_integration:
+Semantic_search: Use Cursor's upgraded embedding model for codebase/MCP file search; query sandbox via natural language
+Notification_system: Slack-like alerts for agent completion/deploy; customizable via Cursor's notification API
+Git_automation: Auto-commit via simple-git; integrates with GitLens for visual diffs of agent changes
+Theme_support: Dark/light modes matching Cursor 2025 themes; import from VS Code marketplace
+
+advanced_2025_features:
+MCP_elicitation: Handle structured inputs (e.g., user choice for MCP auth) in agent prompts; UI modals for confirmation
+Remote_extensions: Host mcp-swarm tools on Open VSC for cloud sync; performance tuning for indexing/vector services
+Multi_agent_collaboration: Orchestrate with other extensions (e.g., Codex for code gen, Continue for local LLMs); subtask delegation
+Security_compliance: Enforce MCP proxy for enterprise; audit logs for tool calls; compatible with VS Code's restricted mode
+build_extension: |
+In /extensions/:
+
+
+
+package.json: Define activationEvents (onStartupFinished), contributes.commands/menus/keybindings
+Commands: swarm.runTask, swarm.addMCP, etc.
+Menus: Add to command palette, sidebar
+Keybindings: Cmd+K for quick swarm prompt
+
+extension.ts:
+Register commands: vscode.commands.registerCommand('swarm.runTask', spawnNpxSwarm)
+Sidebar provider: vscode.window.registerTreeDataProvider('swarmExplorer', new SwarmTreeView())
+AI hooks: vscode.lm.registerLanguageModelTool for MCP tools; integrate with vscode.chat for "@swarm"
+Tool sets: Create .jsonc in user profile for #swarm-tools
+Use vscode-languageserver for MCP schema validation in config.json
+
+Composer integration: Hook into Cursor's Composer API (if exposed) or simulate via chat participant
+Package: npx vsce package --out mcp-swarm.vsix
+Test: Load in Cursor dev mode; verify GPU offload, MCP calls, agent parallelism
+troubleshooting: |
+
+
+Extension not loading: Check Cursor logs (View > Output > mcp-swarm); ensure VSIX signed
+MCP tools fail: Verify LM Studio server running; fallback to Ollama
+Agent mode conflicts: Pin swarm view in sidebar; reorder activity bar horizontally
+GPU not detected: Update CUDA drivers; enable full offload in LM Studio
+Marketplace issues: Manual VSIX install (bypasses restrictions like Microsoft C/C++ enforcement)
+Compatibility: Test with Cursor 1.4+ for steered messaging (⌥+Enter queue, ⌘+Enter interrupt)
+
+execution_flow:
+command: "npx mcp-swarm "Task""
+steps:
+
+discover_mcp → load config → create sandbox → start UI
+orchestrator → decide phase (via LM Studio model)
+agents run in parallel → use MCP tools → write files
+plugins trigger on events
+orchestrator loops until "END"
+Final output:
+Live app: https://*.fly.dev
+Sandbox: ./sandbox/
+UI: http://localhost:3000
+Cursor ext: Integrated run in IDE (Cmd+Shift+P > MCP Swarm: Run Task)
+
+
+testing:
+command: |
+npx mcp-swarm "Build a simple todo app with GitHub MCP"
+expected:
+
+UI shows files
+Agents create /ui/App.tsx
+Auto-deploy works
+LM Studio logs GPU usage
+Cursor ext: Cmd+Shift+P runs task; verify Composer "@swarm" delegation; test MCP elicitation modal
+
+deployment:
+hosting: "Fly.io free tier"
+auto_deploy: "via devops_engineer + auto_deploy plugin"
+one_click: "fly launch --copy-config --now"
+cursor_deploy: "Extension command: 'MCP Swarm: Deploy to Fly' (progress in status bar)"
+legal:
+fork_source: "https://github.com/karthikscale3/ctx-zip"
+license: "MIT — full fork allowed"
+credit: "Built on ctx-zip by karthikscale3"
+name: "mcp-swarm (not ctx-zip-agents)"
+final_output:
+success_criteria:
+
+Runs on laptop with NVIDIA GPU via LM Studio
+Uses only free models (Grok-1/Llama/etc. in LM Studio)
+Auto-discovers and manages MCPs
+8+ agents work in parallel
+Live UI at localhost:3000
+Cursor extension installs/runs tasks with expanded features (Composer hooks, tool sets)
+Auto-deploys to free hosting
+Self-improves via critic/evolver
+100% open-source, MIT
+deliverable: "npx mcp-swarm@latest works end-to-end; Cursor ext ready with 2025 integrations"
+
+amp_instructions:
+role: "Amp, AI agent in Cursor IDE"
+task: |
+
+Create the entire project from this YAML
+Generate all files exactly as specified
+Integrate LM Studio: Test local server + model load
+Build Cursor extension: VSIX package + test install with expanded features
+Test locally after each major component (e.g., run Composer "@swarm" test)
+Use only free tools and models
+Output final npx mcp-swarm@latest command that works
+rules:
+
+
+Do not use paid APIs
+Do not assume user has X Premium
+Do not skip persistence or GPU offload
+Do not hardcode MCPs — use config + discovery
+For Cursor: Implement tool sets as .jsonc; hook into agent mode API
+Verify: MCP elicitation works in modals; no marketplace restrictions
+final_test: |
+Run:
+
+textnpx mcp-swarm "Build the #1 free AI agent platform"
+Install Cursor ext, run task via Cmd+Shift+P; test "@swarm" in Composer.
+Confirm it ships a live app with GPU acceleration and agent mode tools.

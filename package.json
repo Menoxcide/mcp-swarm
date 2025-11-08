@@ -1,0 +1,58 @@
+{
+  "name": "mcp-swarm",
+  "version": "0.1.0",
+  "description": "Free, local-first, NVIDIA GPU-powered multi-agent system using MCP servers, persistent sandbox, live UI, and self-evolution.",
+  "main": "core/engine.ts",
+  "scripts": {
+    "start": "node core/engine.ts",
+    "dev": "nodemon core/engine.ts",
+    "init": "node scripts/init.js",
+    "ui": "node ui/server.ts",
+    "test": "npx ts-node core/engine.ts \"Build a simple todo app\"",
+    "build": "tsc",
+    "deploy": "fly deploy --local-only"
+  },
+  "bin": {
+    "mcp-swarm": "./bin/mcp-swarm.js"
+  },
+  "keywords": [
+    "ai",
+    "agents",
+    "mcp",
+    "multi-agent",
+    "llm",
+    "automation",
+    "free",
+    "open-source"
+  ],
+  "author": "mcp-swarm",
+  "license": "MIT",
+  "dependencies": {
+    "@langchain/langgraph": "^0.2.0",
+    "archiver": "^6.0.0",
+    "chokidar": "^3.5.0",
+    "ctx-zip": "latest",
+    "express": "^4.18.0",
+    "simple-git": "^3.20.0",
+    "socket.io": "^4.7.0",
+    "uuid": "^9.0.0",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.0",
+    "@types/node": "^20.0.0",
+    "@types/uuid": "^9.0.0",
+    "@vscode/vsce": "^3.0.0",
+    "nodemon": "^3.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mcp-swarm/mcp-swarm"
+  },
+  "homepage": "https://mcp-swarm.dev"
+}

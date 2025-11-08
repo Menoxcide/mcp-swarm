@@ -1,0 +1,92 @@
+{
+  "name": "mcp-swarm-cursor-ext",
+  "displayName": "MCP Swarm",
+  "description": "Cursor IDE extension to run mcp-swarm agents directly in IDE, with AI chat integration, MCP tool calls, and agentic workflows.",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.93.0",
+    "cursor": "^0.51.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "swarm.runTask",
+        "title": "MCP Swarm: Run Task"
+      },
+      {
+        "command": "swarm.addMCP",
+        "title": "MCP Swarm: Add MCP Tool"
+      },
+      {
+        "command": "swarm.debugAgent",
+        "title": "MCP Swarm: Debug Agent"
+      },
+      {
+        "command": "swarm.deploy",
+        "title": "MCP Swarm: Deploy to Fly"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "swarm.runTask"
+        },
+        {
+          "command": "swarm.addMCP"
+        },
+        {
+          "command": "swarm.debugAgent"
+        },
+        {
+          "command": "swarm.deploy"
+        }
+      ]
+    },
+    "views": {
+      "explorer": [
+        {
+          "id": "swarmExplorer",
+          "name": "Swarm Explorer",
+          "icon": "$(robot)",
+          "contextualTitle": "MCP Swarm Sandbox"
+        },
+        {
+          "id": "swarmDebugger",
+          "name": "Agent Debugger",
+          "icon": "$(debug-alt)",
+          "contextualTitle": "Running Agents"
+        },
+        {
+          "id": "swarmRegistry",
+          "name": "MCP Registry",
+          "icon": "$(server)",
+          "contextualTitle": "Available MCPs"
+        },
+        {
+          "id": "swarmMonitor",
+          "name": "Performance Monitor",
+          "icon": "$(graph)",
+          "contextualTitle": "GPU & Token Usage"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "npx @vscode/vsce package --out mcp-swarm.vsix"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.93.0",
+    "typescript": "^5.0.0"
+  }
+}
