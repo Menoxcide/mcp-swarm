@@ -72,24 +72,32 @@ System automatically:
 
 ### Installation
 
-#### Option 1: Global CLI (Recommended)
+#### Option 1: Global CLI (After NPM Publish)
 ```bash
 npm install -g mcp-swarm
 mcp-swarm "Build a React dashboard"
 ```
 
-#### Option 2: Direct Usage
+#### Option 2: Direct Usage (After NPM Publish)
 ```bash
 npx mcp-swarm "Create a Node.js API"
 ```
 
-#### Option 3: Local Development
+#### Option 3: Local Development (Current)
+```bash
+# From project directory
+node bin/mcp-swarm.js "Build a React dashboard"
+# Or
+npm run test
+```
+
+#### Option 4: Local Development (Full Setup)
 ```bash
 git clone https://github.com/yourusername/mcp-swarm.git
 cd mcp-swarm
 npm install
 npm run build
-npx ts-node core/engine.ts "Build an app"
+node bin/mcp-swarm.js "Build an app"
 ```
 
 ### GPU Setup (Optional but Recommended)
@@ -104,29 +112,33 @@ npx ts-node core/engine.ts "Build an app"
 
 ### Build a Complete Application
 ```bash
+# After npm publish:
 npx mcp-swarm "Build a SaaS dashboard with user auth, payment integration, and admin panel"
+
+# Local development:
+node bin/mcp-swarm.js "Build a SaaS dashboard with user auth, payment integration, and admin panel"
 ```
 
 ### API Development
 ```bash
-npx mcp-swarm "Create a REST API for a blog with PostgreSQL and authentication"
+node bin/mcp-swarm.js "Create a REST API for a blog with PostgreSQL and authentication"
 ```
 
 ### UI/UX Design
 ```bash
-npx mcp-swarm "Design a modern landing page for a fintech startup"
+node bin/mcp-swarm.js "Design a modern landing page for a fintech startup"
 ```
 
 ### DevOps & Deployment
 ```bash
-npx mcp-swarm "Set up CI/CD pipeline with Docker and deploy to Fly.io"
+node bin/mcp-swarm.js "Set up CI/CD pipeline with Docker and deploy to Fly.io"
 ```
 
 ### Custom Agent Tasks
 ```bash
-npx mcp-swarm "Analyze competitors in the AI agent space"
-npx mcp-swarm "Generate marketing content for a new product launch"
-npx mcp-swarm "Review and optimize this codebase for performance"
+node bin/mcp-swarm.js "Analyze competitors in the AI agent space"
+node bin/mcp-swarm.js "Generate marketing content for a new product launch"
+node bin/mcp-swarm.js "Review and optimize this codebase for performance"
 ```
 
 ## 🏗️ Architecture
@@ -283,5 +295,9 @@ Built on [ctx-zip](https://github.com/karthikscale3/ctx-zip) by karthikscale3.
 **Ready to build anything?** 🚀
 
 ```bash
+# Local development:
+node bin/mcp-swarm.js "Build the next big thing"
+
+# After npm publish:
 npx mcp-swarm "Build the next big thing"
 ```

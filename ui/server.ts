@@ -45,17 +45,15 @@ export function startLiveUI(explorer: any) {
   return server;
 }
 
-// For standalone execution
-if (require.main === module) {
-  console.log('Starting UI server...');
-  startLiveUI({
-    rootDir: './sandbox',
-    listFiles: async () => ['sample-file.txt']
-  });
+// For standalone execution - run with: npx ts-node ui/server.ts
+console.log('Starting UI server...');
+startLiveUI({
+  rootDir: './sandbox',
+  listFiles: async () => ['sample-file.txt']
+});
 
-  // Exit after 5 seconds for testing
-  setTimeout(() => {
-    console.log('UI server test completed');
-    process.exit(0);
-  }, 5000);
-}
+// Exit after 5 seconds for testing
+setTimeout(() => {
+  console.log('UI server test completed - visit http://localhost:3000');
+  process.exit(0);
+}, 5000);

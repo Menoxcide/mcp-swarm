@@ -7,7 +7,7 @@
     "start": "node core/engine.ts",
     "dev": "nodemon core/engine.ts",
     "init": "node scripts/init.js",
-    "ui": "node ui/server.ts",
+    "ui": "npx ts-node ui/server.ts",
     "test": "npx ts-node core/engine.ts \"Build a simple todo app\"",
     "build": "tsc",
     "deploy": "fly deploy --local-only"
