@@ -27,7 +27,7 @@ const MASTER_MCP_LIST = [
 
 // Simple mock explorer for now
 class MockExplorer {
-  rootDir = './sandbox';
+  constructor(public rootDir: string = './outputs') {}
 
   async writeFile(filePath: string, content: string) {
     const fullPath = path.join(this.rootDir, filePath);
@@ -47,7 +47,13 @@ class MockExplorer {
 }
 
 export async function discoverMCPNode(state: any) {
-  const configPath = path.join('sandbox', 'mcp-config.json');
+  // Create outputs directory structure
+  const outputsDir = path.join('outputs');
+  const configPath = path.join(outputsDir, 'mcp-config.json');
+
+  // Ensure outputs directory exists
+  await fs.mkdir(outputsDir, { recursive: true });
+
   let config: any[] = [];
   try {
     config = JSON.parse(await fs.readFile(configPath, 'utf-8'));
@@ -57,6 +63,6 @@ export async function discoverMCPNode(state: any) {
     await fs.writeFile(configPath, JSON.stringify(config, null, 2));
   }
 
-  const explorer = new MockExplorer();
+  const explorer = new MockExplorer(outputsDir);
   return { explorer };
 }

@@ -92,10 +92,10 @@ jspm_packages/
 # TernJS port file
 .tern-port
 
-# Sandbox files (persistent, but exclude generated content)
-sandbox/logs/
-sandbox/temp/
-sandbox/cache/
+# Generated outputs (exclude all generated content)
+outputs/
+*.generated.*
+generated/
 
 # Extension build artifacts
 extensions/**/*.vsix

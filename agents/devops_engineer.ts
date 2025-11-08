@@ -3,8 +3,14 @@ export default {
   async run(state: any, { explorer, model }: any) {
     console.log(`🚀 DevOps Engineer setting up deployment for: "${state.task}"`);
 
-    // Create Dockerfile
-    const dockerfile = `FROM node:18-alpine AS base
+    // Check what was built by UI designer
+    const uiDesignerResult = state.results?.ui_ux_designer;
+    const isReactApp = uiDesignerResult && uiDesignerResult.includes('React');
+
+    // Create appropriate Dockerfile based on the built application
+    const dockerfile = isReactApp ?
+      // React app Dockerfile
+      `FROM node:18-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
@@ -12,13 +18,8 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Install dependencies
-COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
-RUN \\
-  if [ -f yarn.lock ]; then yarn --frozen-lockfile --network-timeout 600000; \\
-  elif [ -f package-lock.json ]; then npm ci; \\
-  elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm i --frozen-lockfile; \\
-  else echo "Lockfile not found." && exit 1; \\
-  fi
+COPY package*.json ./
+RUN npm ci --only=production
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -26,46 +27,83 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Build the application
-RUN \\
-  if [ -f yarn.lock ]; then yarn build; \\
-  elif [ -f package-lock.json ]; then npm run build; \\
-  elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm build; \\
-  else echo "Lockfile not found." && exit 1; \\
-  fi
+# Build the React application
+RUN npm run build
 
-# Production image, copy all the files and run next
+# Production image
+FROM nginx:alpine AS runner
+WORKDIR /app
+
+# Copy built files to nginx
+COPY --from=builder /app/build /usr/share/nginx/html
+
+# Copy nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]` :
+
+      // Generic Node.js app Dockerfile
+      `FROM node:18-alpine AS base
+
+# Install dependencies only when needed
+FROM base AS deps
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+
+# Install dependencies
+COPY package*.json ./
+RUN npm ci --only=production
+
+# Production image
 FROM base AS runner
 WORKDIR /app
 
 ENV NODE_ENV production
 
 RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+RUN adduser --system --uid 1001 appuser
 
-COPY --from=builder /app/public ./public
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
 
-# Set the correct permission for prerender cache
-RUN mkdir .next
-RUN chown nextjs:nodejs .next
-
-# Automatically leverage output traces to reduce image size
-# https://nextjs.org/docs/advanced-features/output-file-tracing
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-USER nextjs
+USER appuser
 
 EXPOSE 3000
 
 ENV PORT 3000
-# set hostname to localhost
-ENV HOSTNAME "0.0.0.0"
 
-CMD ["node", "server.js"]`;
+CMD ["npm", "start"]`;
 
-    // Create Fly.io configuration
-    const flyToml = `app = "mcp-swarm"
+    // Create appropriate Fly.io configuration
+    const flyToml = isReactApp ?
+      // React app Fly.io config (nginx on port 80)
+      `app = "mcp-swarm-react"
+primary_region = "ord"
+console_command = "/bin/bash"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[http_service]
+  internal_port = 80
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
+
+[mounts]
+  source = "mcp_swarm_react_data"
+  destination = "/data"` :
+
+      // Node.js app Fly.io config
+      `app = "mcp-swarm-node"
 primary_region = "ord"
 console_command = "/bin/bash"
 
@@ -85,12 +123,8 @@ console_command = "/bin/bash"
   memory = "256mb"
 
 [mounts]
-  source = "mcp_swarm_data"
+  source = "mcp_swarm_node_data"
   destination = "/data"
-
-[[statics]]
-  guest_path = "/app/public"
-  url_prefix = "/"
 
 [env]
   NODE_ENV = "production"

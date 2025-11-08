@@ -1,5 +1,0 @@
-{
-  "trials": 5,
-  "results": "Task \"Run 5 trials, measure speed\" completed successfully. This is a mock response - in production this would use a real LLM.",
-  "timestamp": "2025-11-08T19:12:36.043Z"
-}

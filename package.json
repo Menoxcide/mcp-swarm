@@ -2,6 +2,7 @@
   "name": "mcp-swarm",
   "version": "0.1.0",
   "description": "Free, local-first, NVIDIA GPU-powered multi-agent system using MCP servers, persistent sandbox, live UI, and self-evolution.",
+  "type": "module",
   "main": "core/engine.ts",
   "scripts": {
     "start": "node core/engine.ts",
@@ -13,7 +14,7 @@
     "deploy": "fly deploy --local-only"
   },
   "bin": {
-    "mcp-swarm": "./bin/mcp-swarm.js"
+  "mcp-swarm": "./bin/mcp-swarm.cjs"
   },
   "keywords": [
     "ai",
@@ -28,14 +29,15 @@
   "author": "mcp-swarm",
   "license": "MIT",
   "dependencies": {
-    "@langchain/langgraph": "^0.2.0",
-    "archiver": "^6.0.0",
-    "chokidar": "^3.5.0",
-    "ctx-zip": "latest",
-    "express": "^4.18.0",
-    "simple-git": "^3.20.0",
-    "socket.io": "^4.7.0",
-    "uuid": "^9.0.0",
+  "@langchain/langgraph": "^0.2.0",
+  "archiver": "^6.0.0",
+  "chokidar": "^3.5.0",
+  "ctx-zip": "latest",
+  "dotenv": "^16.4.0",
+  "express": "^4.18.0",
+  "simple-git": "^3.20.0",
+  "socket.io": "^4.7.0",
+  "uuid": "^9.0.0",
     "zod": "^3.22.0"
   },
   "devDependencies": {

@@ -3,6 +3,9 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import chokidar from 'chokidar';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export function startLiveUI(explorer: any) {
   const app = express();
@@ -46,14 +49,10 @@ export function startLiveUI(explorer: any) {
 }
 
 // For standalone execution - run with: npx ts-node ui/server.ts
-console.log('Starting UI server...');
-startLiveUI({
-  rootDir: './sandbox',
-  listFiles: async () => ['sample-file.txt']
-});
-
-// Exit after 5 seconds for testing
-setTimeout(() => {
-  console.log('UI server test completed - visit http://localhost:3000');
-  process.exit(0);
-}, 5000);
+if (import.meta.url === `file://${process.argv[1]}`) {
+  console.log('Starting UI server...');
+  startLiveUI({
+    rootDir: './sandbox',
+    listFiles: async () => ['sample-file.txt']
+  });
+}

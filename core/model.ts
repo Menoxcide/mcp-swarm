@@ -1,6 +1,65 @@
-// Simple mock model for demonstration
-// In production, this would connect to LM Studio or other LLM APIs
+// Load environment variables
+import dotenv from 'dotenv';
+dotenv.config();
 
+// LM Studio integration for local AI models
+export class LMStudioModel {
+  private baseUrl: string;
+  private apiKey?: string;
+
+  constructor(baseUrl: string = 'http://localhost:1234/v1', apiKey?: string) {
+    this.baseUrl = baseUrl;
+    this.apiKey = apiKey;
+  }
+
+  async invoke(messages: any[], agentName?: string) {
+    const lastMessage = messages[messages.length - 1]?.content || '';
+    console.log(`🤖 LM Studio processing for ${agentName || 'agent'}: "${lastMessage.substring(0, 100)}..."`);
+
+    try {
+      const response = await fetch(`${this.baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(this.apiKey && { 'Authorization': `Bearer ${this.apiKey}` })
+        },
+        body: JSON.stringify({
+          model: 'local-model', // LM Studio accepts any model name
+          messages: messages.map(msg => ({
+            role: msg.role || 'user',
+            content: msg.content
+          })),
+          temperature: 0.7,
+          max_tokens: 2000,
+          stream: false
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`LM Studio API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data: any = await response.json();
+      const content = data.choices?.[0]?.message?.content || 'No response generated';
+
+      console.log(`📤 LM Studio response (${content.length} chars): ${content.substring(0, 100)}...`);
+
+      return {
+        content,
+        usage: {
+          tokens: data.usage?.total_tokens || Math.ceil(content.length / 4)
+        }
+      };
+    } catch (error) {
+      console.error(`❌ LM Studio error:`, error);
+      // Fallback to mock response
+      console.log(`🔄 Falling back to mock response`);
+      return new MockModel().invoke(messages, agentName);
+    }
+  }
+}
+
+// Simple mock model for demonstration/fallback
 export class MockModel {
   async invoke(messages: any[], agentName?: string) {
     // Simulate AI responses based on task and agent
@@ -85,4 +144,17 @@ export class MockModel {
   }
 }
 
-export const createModel = () => new MockModel();
+// Configuration for model selection
+const USE_LM_STUDIO = process.env.USE_LM_STUDIO === 'true' || process.env.LM_STUDIO_URL;
+const LM_STUDIO_URL = process.env.LM_STUDIO_URL || 'http://localhost:1234/v1';
+const LM_STUDIO_API_KEY = process.env.LM_STUDIO_API_KEY;
+
+export const createModel = () => {
+  if (USE_LM_STUDIO) {
+    console.log(`🚀 Using LM Studio at ${LM_STUDIO_URL}`);
+    return new LMStudioModel(LM_STUDIO_URL, LM_STUDIO_API_KEY);
+  } else {
+    console.log(`🎭 Using mock model (set USE_LM_STUDIO=true or LM_STUDIO_URL to use LM Studio)`);
+    return new MockModel();
+  }
+};

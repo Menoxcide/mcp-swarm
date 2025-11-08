@@ -1,106 +1,265 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MCP Swarm - Live UI</title>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MCP-Swarm Dashboard</title>
+    <meta name="description" content="MCP-Swarm AI Agent Platform Dashboard" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <script src="https://cdn.socket.io/4.7.0/socket.io.min.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        h1 {
-            color: #333;
-            text-align: center;
-        }
-        .status {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-        .files {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .file-list {
-            list-style: none;
-            padding: 0;
-        }
-        .file-item {
-            padding: 8px 0;
-            border-bottom: 1px solid #eee;
-        }
-        .file-item:last-child {
-            border-bottom: none;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>MCP Swarm - Live Agent Platform</h1>
-
-        <div class="status">
-            <h2>System Status</h2>
-            <p>Status: <span id="status">Initializing...</span></p>
-            <p>Active Agents: <span id="agents">0</span></p>
-            <p>MCP Servers: <span id="mcps">0</span></p>
+  </head>
+  <body>
+    <div id="app" class="min-h-screen bg-gray-50">
+      <!-- Header -->
+      <header class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div class="flex justify-between items-center py-6">
+            <div class="flex items-center">
+              <i data-lucide="bot" class="w-8 h-8 text-blue-600 mr-3"></i>
+              <div>
+                <h1 class="text-2xl font-bold text-gray-900">MCP-Swarm</h1>
+                <p class="text-sm text-gray-600">AI Agent Platform</p>
+              </div>
+            </div>
+            <div class="flex items-center space-x-4">
+              <div class="flex items-center space-x-2">
+                <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span class="text-sm text-gray-600" id="agent-count">11 Agents Online</span>
+              </div>
+              <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                Deploy to Fly.io
+              </button>
+            </div>
+          </div>
         </div>
+      </header>
 
-        <div class="files">
-            <h2>Sandbox Files</h2>
-            <ul id="file-list" class="file-list">
-                <li class="file-item">Loading files...</li>
-            </ul>
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+          <!-- Main Content -->
+          <div class="lg:col-span-2 space-y-8">
+
+            <!-- Task Input -->
+            <div class="bg-white rounded-lg shadow-sm p-6">
+              <h2 class="text-lg font-semibold text-gray-900 mb-4">Task Execution</h2>
+              <div class="flex space-x-4">
+                <input
+                  type="text"
+                  id="task-input"
+                  class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter your task..."
+                  value="Build a React dashboard with authentication"
+                />
+                <button
+                  id="run-task"
+                  class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
+                >
+                  <i data-lucide="zap" class="w-4 h-4"></i>
+                  <span>Run Task</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Agent Status -->
+            <div class="bg-white rounded-lg shadow-sm p-6">
+              <h2 class="text-lg font-semibold text-gray-900 mb-4">Agent Status</h2>
+              <div id="agents-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Agents will be populated by JavaScript -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Sidebar -->
+          <div class="space-y-8">
+
+            <!-- Performance Metrics -->
+            <div class="bg-white rounded-lg shadow-sm p-6">
+              <h2 class="text-lg font-semibold text-gray-900 mb-4">Performance</h2>
+              <div class="space-y-4">
+                <div class="flex justify-between items-center">
+                  <span class="text-sm text-gray-600">GPU Usage</span>
+                  <span class="font-medium" id="gpu-usage">0%</span>
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-sm text-gray-600">Memory</span>
+                  <span class="font-medium" id="memory-usage">0MB</span>
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-sm text-gray-600">Tokens/Second</span>
+                  <span class="font-medium" id="tokens-sec">0</span>
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-sm text-gray-600">Active Agents</span>
+                  <span class="font-medium" id="active-agents">0</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- File Explorer -->
+            <div class="bg-white rounded-lg shadow-sm p-6">
+              <h2 class="text-lg font-semibold text-gray-900 mb-4">Generated Files</h2>
+              <div id="file-list" class="space-y-2">
+                <div class="text-sm text-gray-500">Waiting for task execution...</div>
+              </div>
+            </div>
+
+            <!-- MCP Servers -->
+            <div class="bg-white rounded-lg shadow-sm p-6">
+              <h2 class="text-lg font-semibold text-gray-900 mb-4">MCP Servers</h2>
+              <div id="mcp-servers" class="space-y-2">
+                <div class="text-sm text-gray-500">No servers running</div>
+              </div>
+            </div>
+          </div>
         </div>
+      </div>
     </div>
 
     <script>
-        const socket = io();
+      // Initialize Lucide icons
+      lucide.createIcons();
 
-        socket.on('connect', () => {
-            document.getElementById('status').textContent = 'Connected';
+      const socket = io();
+      let agents = [];
+
+      // Initialize default agents
+      const defaultAgents = [
+        { id: '1', name: 'Market Researcher', status: 'idle', progress: 0, description: 'Analyzing market opportunities and competitors' },
+        { id: '2', name: 'Product Strategist', status: 'idle', progress: 0, description: 'Planning product strategy and roadmap' },
+        { id: '3', name: 'System Architect', status: 'idle', progress: 0, description: 'Designing technical architecture' },
+        { id: '4', name: 'MCP Engineer', status: 'idle', progress: 0, description: 'Building MCP servers and integrations' },
+        { id: '5', name: 'UI/UX Designer', status: 'idle', progress: 0, description: 'Creating user interface and experience' },
+        { id: '6', name: 'DevOps Engineer', status: 'idle', progress: 0, description: 'Setting up deployment and infrastructure' },
+        { id: '7', name: 'QA Tester', status: 'idle', progress: 0, description: 'Testing security and quality assurance' },
+        { id: '8', name: 'Growth Hacker', status: 'idle', progress: 0, description: 'Planning marketing and growth strategies' },
+        { id: '9', name: 'Critic', status: 'idle', progress: 0, description: 'Code review and quality assessment' },
+        { id: '10', name: 'Evolver', status: 'idle', progress: 0, description: 'Self-improvement and optimization' },
+        { id: '11', name: 'Benchmark', status: 'idle', progress: 0, description: 'Performance testing and metrics' }
+      ];
+
+      function initializeAgents() {
+        agents = [...defaultAgents];
+        updateAgentsGrid();
+      }
+
+      function updateAgentsGrid() {
+        const grid = document.getElementById('agents-grid');
+        grid.innerHTML = '';
+
+        agents.forEach(agent => {
+          const agentDiv = document.createElement('div');
+          agentDiv.className = 'border border-gray-200 rounded-lg p-4';
+
+          const statusColor = getStatusColor(agent.status);
+          const statusIcon = getStatusIcon(agent.status);
+
+          agentDiv.innerHTML = `
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="font-medium text-gray-900">${agent.name}</h3>
+              <div class="flex items-center space-x-1 px-2 py-1 rounded-full text-xs ${statusColor}">
+                ${statusIcon}
+                <span class="capitalize">${agent.status}</span>
+              </div>
+            </div>
+            <p class="text-sm text-gray-600 mb-2">${agent.description}</p>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+              <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: ${agent.progress}%"></div>
+            </div>
+            <div class="flex justify-between text-xs text-gray-500 mt-1">
+              <span>${agent.progress}% complete</span>
+            </div>
+          `;
+
+          grid.appendChild(agentDiv);
         });
+      }
 
-        socket.on('disconnect', () => {
-            document.getElementById('status').textContent = 'Disconnected';
-        });
+      function getStatusColor(status) {
+        switch (status) {
+          case 'running': return 'text-blue-600 bg-blue-100';
+          case 'completed': return 'text-green-600 bg-green-100';
+          case 'error': return 'text-red-600 bg-red-100';
+          default: return 'text-gray-600 bg-gray-100';
+        }
+      }
 
-        socket.on('files', (files) => {
-            const fileList = document.getElementById('file-list');
-            fileList.innerHTML = '';
+      function getStatusIcon(status) {
+        switch (status) {
+          case 'running': return '<i data-lucide=\"activity\" class=\"w-4 h-4 animate-pulse\"></i>';
+          case 'completed': return '<i data-lucide=\"zap\" class=\"w-4 h-4\"></i>';
+          case 'error': return '<i data-lucide=\"alert-triangle\" class=\"w-4 h-4\"></i>';
+          default: return '<i data-lucide=\"settings\" class=\"w-4 h-4\"></i>';
+        }
+      }
 
-            if (files && files.length > 0) {
-                files.forEach(file => {
-                    const li = document.createElement('li');
-                    li.className = 'file-item';
-                    li.textContent = file;
-                    fileList.appendChild(li);
-                });
-            } else {
-                const li = document.createElement('li');
-                li.className = 'file-item';
-                li.textContent = 'No files found';
-                fileList.appendChild(li);
-            }
-        });
+      function updateFileList(files) {
+        const fileList = document.getElementById('file-list');
+        fileList.innerHTML = '';
 
-        // Update stats periodically
-        setInterval(() => {
-            // This would be updated by the backend
-            document.getElementById('agents').textContent = '11'; // Number of agents
-            document.getElementById('mcps').textContent = '50+'; // Number of MCP servers
-        }, 5000);
+        if (files && files.length > 0) {
+          files.forEach(file => {
+            const fileDiv = document.createElement('div');
+            fileDiv.className = 'flex items-center space-x-2 p-2 hover:bg-gray-50 rounded cursor-pointer';
+            fileDiv.innerHTML = `
+              <i data-lucide="file" class="w-4 h-4 text-gray-500"></i>
+              <span class="text-sm text-gray-700">${file}</span>
+            `;
+            fileList.appendChild(fileDiv);
+          });
+        } else {
+          fileList.innerHTML = '<div class="text-sm text-gray-500">No files generated yet</div>';
+        }
+
+        // Re-initialize icons
+        lucide.createIcons();
+      }
+
+      // Socket event handlers
+      socket.on('connect', () => {
+        console.log('Connected to MCP-Swarm server');
+      });
+
+      socket.on('disconnect', () => {
+        console.log('Disconnected from MCP-Swarm server');
+      });
+
+      socket.on('agent-update', (data) => {
+        console.log('Agent update:', data);
+        const agent = agents.find(a => a.name === data.agent);
+        if (agent) {
+          agent.status = data.status;
+          agent.progress = data.progress;
+          updateAgentsGrid();
+        }
+      });
+
+      socket.on('files', (files) => {
+        console.log('Files update:', files);
+        updateFileList(files);
+      });
+
+      // Initialize
+      initializeAgents();
+
+      // Run task button handler
+      document.getElementById('run-task').addEventListener('click', () => {
+        const taskInput = document.getElementById('task-input');
+        const task = taskInput.value;
+
+        if (task.trim()) {
+          console.log('Running task:', task);
+          // This would send the task to the backend
+          // For now, simulate some activity
+          setTimeout(() => {
+            agents[0].status = 'running';
+            agents[0].progress = 50;
+            updateAgentsGrid();
+          }, 1000);
+        }
+      });
     </script>
-</body>
+  </body>
 </html>

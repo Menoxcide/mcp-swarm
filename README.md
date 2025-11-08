@@ -100,13 +100,37 @@ npm run build
 node bin/mcp-swarm.js "Build an app"
 ```
 
-### GPU Setup (Optional but Recommended)
+### GPU Setup with LM Studio (Recommended)
 ```bash
 # 1. Download LM Studio: https://lmstudio.ai/
-# 2. Search & download: "xai-org/grok-1" or "microsoft/wizardlm"
-# 3. Load model with GPU offload (all layers to CUDA)
-# 4. Start local server: http://localhost:1234/v1
+# 2. Search & download a model (recommended: "Llama 3.2 8B" or "Grok-1")
+# 3. Load model with GPU offload (all layers to CUDA for RTX GPUs)
+# 4. Start local server: http://localhost:1234/v1 (OpenAI-compatible API)
+# 5. Run setup script: ./setup-lm-studio.sh (Linux/Mac) or setup-lm-studio.bat (Windows)
 ```
+
+### LM Studio Integration
+MCP-Swarm automatically detects and integrates with LM Studio for GPU-accelerated AI responses:
+
+```bash
+# Quick setup (after starting LM Studio server)
+./setup-lm-studio.sh    # Linux/Mac
+# or
+setup-lm-studio.bat     # Windows
+
+# Then run with real AI models
+node bin/mcp-swarm.cjs "Build a React dashboard"
+```
+
+**Environment Variables:**
+- `USE_LM_STUDIO=true` - Enable LM Studio integration
+- `LM_STUDIO_URL=http://localhost:1234/v1` - LM Studio server URL
+- `LM_STUDIO_API_KEY` - Optional API key (usually not needed for local)
+
+**Performance Benefits:**
+- 2-4x faster responses with GPU acceleration
+- Local privacy (no data sent to external APIs)
+- Support for RTX 20/30/40/50 series GPUs
 
 ## 📖 Usage Examples
 

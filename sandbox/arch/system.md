@@ -1,1 +1,0 @@
-Fly.io free tier + SQLite + Local GPU + MCP proxy

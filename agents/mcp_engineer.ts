@@ -1,7 +1,13 @@
+import { spawn } from 'child_process';
+import path from 'path';
+
 export default {
   name: 'mcp_engineer',
   async run(state: any, { explorer, model }: any) {
-    console.log(`🔧 MCP Engineer building MCPs for: "${state.task}"`);
+    console.log(`🔧 MCP Engineer deploying MCP servers for: "${state.task}"`);
+
+    // Store running MCP server processes
+    const mcpProcesses: any[] = [];
 
     // Build file search MCP
     const fileSearchCode = `import { Server } from '@modelcontextprotocol/sdk/server/index.js';
@@ -315,14 +321,62 @@ if (import.meta.url === \`file://\${process.argv[1]}\`) {
 export { ImageGenServer };
 `;
 
-    console.log(`📝 Creating MCP servers...`);
+    console.log(`📝 Creating and starting MCP servers...`);
+
+    // Create MCP server files
     await explorer.writeFile('mcp/file_search.ts', fileSearchCode);
     await explorer.writeFile('mcp/image_gen.ts', imageGenCode);
+
+    // Start MCP servers as processes (like ctx-zip does)
+    const mcpDir = path.join(process.cwd(), 'sandbox', 'mcp');
+
+    // Start file search MCP server
+    try {
+      console.log(`🚀 Starting file-search MCP server...`);
+      const fileSearchProcess = spawn('node', ['--loader', 'ts-node/esm', 'file_search.ts'], {
+        cwd: mcpDir,
+        stdio: ['pipe', 'pipe', 'pipe'],
+        detached: true
+      });
+
+      mcpProcesses.push({
+        name: 'file-search',
+        process: fileSearchProcess,
+        port: 3003 // Assign ports for MCP servers
+      });
+
+      console.log(`✅ File search MCP server started on port 3003`);
+    } catch (error) {
+      console.error(`❌ Failed to start file search MCP server:`, error);
+    }
+
+    // Start image generation MCP server
+    try {
+      console.log(`🚀 Starting image-gen MCP server...`);
+      const imageGenProcess = spawn('node', ['--loader', 'ts-node/esm', 'image_gen.ts'], {
+        cwd: mcpDir,
+        stdio: ['pipe', 'pipe', 'pipe'],
+        detached: true
+      });
+
+      mcpProcesses.push({
+        name: 'image-gen',
+        process: imageGenProcess,
+        port: 3004
+      });
+
+      console.log(`✅ Image generation MCP server started on port 3004`);
+    } catch (error) {
+      console.error(`❌ Failed to start image generation MCP server:`, error);
+    }
+
+    // Store MCP process information for other agents to use
+    state.mcpServers = mcpProcesses;
 
     return {
       results: {
         ...state.results,
-        [this.name]: 'Created file_search.ts and image_gen.ts MCP servers'
+        [this.name]: `Deployed ${mcpProcesses.length} MCP servers: ${mcpProcesses.map(p => `${p.name}(port ${p.port})`).join(', ')}`
       }
     };
   }
