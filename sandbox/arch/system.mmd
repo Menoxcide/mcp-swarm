@@ -1,1 +1,26 @@
-Fly.io free tier + SQLite + Local GPU + MCP proxy
+## System Architecture for "Design a complete technical architecture for "Build the next big thing". Include frontend, backend, database, deployment, security, and scalability considerations."
+
+### Frontend Layer
+- **Cursor IDE Extension**: VSIX package with Composer hooks
+- **Live UI Dashboard**: Express + Socket.IO at localhost:3000
+- **Agent Debugger**: Real-time execution monitoring
+
+### Agent Layer
+- **11 Specialized Agents**: Market research, product strategy, architecture, etc.
+- **MCP Protocol**: 50+ server integrations (GitHub, Slack, databases, etc.)
+- **Orchestration Engine**: LangGraph-based workflow management
+
+### Backend Layer
+- **Sandbox Environment**: Persistent workspace with git integration
+- **Plugin System**: Auto-commit, auto-deploy, custom triggers
+- **Model Integration**: LM Studio with GPU acceleration
+
+### Infrastructure
+- **Fly.io Free Tier**: Global deployment with zero cost
+- **SQLite Database**: Local data persistence
+- **File System**: Git-based version control for all outputs
+
+### Security & Performance
+- **Local-First**: No API keys, runs entirely offline
+- **GPU Acceleration**: RTX series support via CUDA
+- **Sandbox Isolation**: Secure agent execution environment

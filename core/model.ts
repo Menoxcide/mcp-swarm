@@ -2,48 +2,85 @@
 // In production, this would connect to LM Studio or other LLM APIs
 
 export class MockModel {
-  async invoke(messages: any[]) {
-    // Simulate AI responses based on task
+  async invoke(messages: any[], agentName?: string) {
+    // Simulate AI responses based on task and agent
     const lastMessage = messages[messages.length - 1]?.content || '';
     const task = lastMessage.toLowerCase();
 
-    let response = 'Task completed successfully.';
+    console.log(`🤖 Model processing for ${agentName || 'unknown agent'}: "${lastMessage}"`);
 
-    if (task.includes('analyze') && task.includes('crewai')) {
+    let response = `Task "${lastMessage}" completed successfully. This is a mock response - in production this would use a real LLM.`;
+
+    // Agent-specific responses
+    if (agentName === 'market_researcher') {
       response = JSON.stringify({
-        pricing: { crewai: '$49/mo', autogen: 'Free', langgraph: '$0' },
-        stars: { crewai: 1200, autogen: 25000, langgraph: 8900 },
-        weaknesses: ['Complex setup', 'Limited customization', 'Vendor lock-in']
-      });
-    } else if (task.includes('mvp features')) {
-      response = '- Real-time collaboration\n- Plugin marketplace\n- Auto-deployment\n- GPU acceleration\nPaid: Enterprise support, custom MCPs';
-    } else if (task.includes('architecture')) {
-      response = 'Fly.io free tier + SQLite + Local GPU + MCP proxy';
-    } else if (task.includes('mcp')) {
-      response = '// File search MCP\nconst search = (query) => files.filter(f => f.includes(query));';
-    } else if (task.includes('react') && task.includes('tailwind')) {
-      response = 'export default function Dashboard() { return <div className="p-4">Dashboard</div>; }';
-    } else if (task.includes('dockerfile')) {
-      response = 'FROM node:18\nCOPY . .\nRUN npm install\nCMD ["npm", "start"]';
-    } else if (task.includes('fuzz')) {
-      response = 'Security test passed. No vulnerabilities found.';
-    } else if (task.includes('threads')) {
-      response = 'Thread 1: MCP-Swarm revolutionizes AI agents...';
-    } else if (task.includes('bugs')) {
-      response = 'Bug 1: Missing error handling\nBug 2: Race condition in file writes\nBug 3: Memory leak in agent loop';
-    } else if (task.includes('improve')) {
-      response = 'Add retry logic and better error messages';
-    } else if (task.includes('trials')) {
-      response = JSON.stringify({
-        trials: [1200, 1150, 1180],
-        average: 1177,
-        speedup: '2.3x'
-      });
+        competitors: ['CrewAI', 'AutoGen', 'LangGraph', 'SmolAgents'],
+        market_size: '$2.3B AI agents market',
+        trends: ['Multi-agent systems', 'MCP protocols', 'GPU acceleration'],
+        opportunities: ['Free tier dominance', 'Cursor IDE integration', 'Local-first architecture']
+      }, null, 2);
     }
+    else if (agentName === 'product_strategist') {
+      response = `## Product Strategy for "${lastMessage}"
+
+### MVP Features
+- Real-time agent collaboration
+- Plugin marketplace with 50+ MCP servers
+- Auto-deployment to Fly.io
+- GPU acceleration via LM Studio
+- Cursor IDE deep integration
+- Self-evolving critic/evolver agents
+
+### Monetization Model
+- **Free Tier**: Basic agent usage, limited MCP servers
+- **Pro Tier**: $29/mo - Unlimited agents, full MCP access, priority support
+- **Enterprise Tier**: $99/mo - Custom agents, white-label, SLA guarantees
+
+### Target Market
+- **Primary**: AI developers and researchers
+- **Secondary**: DevOps teams, product managers, technical founders
+- **Tertiary**: Enterprises needing AI automation
+
+### Go-to-Market Strategy
+1. **Launch**: Open source release with Cursor integration
+2. **Growth**: Community-driven plugin ecosystem
+3. **Scale**: Enterprise features and support
+4. **Sustain**: Recurring revenue from Pro/Enterprise tiers`;
+    }
+    else if (agentName === 'system_architect') {
+      response = `## System Architecture for "${lastMessage}"
+
+### Frontend Layer
+- **Cursor IDE Extension**: VSIX package with Composer hooks
+- **Live UI Dashboard**: Express + Socket.IO at localhost:3000
+- **Agent Debugger**: Real-time execution monitoring
+
+### Agent Layer
+- **11 Specialized Agents**: Market research, product strategy, architecture, etc.
+- **MCP Protocol**: 50+ server integrations (GitHub, Slack, databases, etc.)
+- **Orchestration Engine**: LangGraph-based workflow management
+
+### Backend Layer
+- **Sandbox Environment**: Persistent workspace with git integration
+- **Plugin System**: Auto-commit, auto-deploy, custom triggers
+- **Model Integration**: LM Studio with GPU acceleration
+
+### Infrastructure
+- **Fly.io Free Tier**: Global deployment with zero cost
+- **SQLite Database**: Local data persistence
+- **File System**: Git-based version control for all outputs
+
+### Security & Performance
+- **Local-First**: No API keys, runs entirely offline
+- **GPU Acceleration**: RTX series support via CUDA
+- **Sandbox Isolation**: Secure agent execution environment`;
+    }
+
+    console.log(`📤 Model response (${response.length} chars): ${response.substring(0, 100)}...`);
 
     return {
       content: response,
-      usage: { tokens: 150 }
+      usage: { tokens: Math.ceil(response.length / 4) }
     };
   }
 }

@@ -48,7 +48,7 @@ export async function runPipeline(task: string) {
   const agentsToRun = agents.filter(agent => priorityAgents.includes(agent.name));
 
   for (const agent of agentsToRun) {
-    console.log(`Running agent: ${agent.name}`);
+    console.log(`🤖 Running agent: ${agent.name} on task: "${state.task}"`);
     try {
       // Add timeout to prevent hanging
       const timeoutPromise = new Promise((_, reject) =>
@@ -60,9 +60,9 @@ export async function runPipeline(task: string) {
       ]);
       state.results = { ...state.results, ...result.results };
       state.phase = agent.name;
-      console.log(`Agent ${agent.name} completed`);
+      console.log(`✅ Agent ${agent.name} completed - generated ${Object.keys(result.results).length} outputs`);
     } catch (error) {
-      console.error(`Agent ${agent.name} failed:`, error instanceof Error ? error.message : String(error));
+      console.error(`❌ Agent ${agent.name} failed:`, error instanceof Error ? error.message : String(error));
     }
   }
 
